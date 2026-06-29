@@ -19,8 +19,13 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest({ProductoController.class, InventarioController.class, VentaController.class})
@@ -58,7 +63,8 @@ class SecurityAccessTest {
                         .content("""
                                 {"nombre":"Arroz","precio":1200,"stock":15,"categoria":{"id":1}}
                                 """))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nombre").value("Arroz"));
     }
 
     @Test
@@ -74,6 +80,63 @@ class SecurityAccessTest {
 
     @Test
     @WithMockUser(roles = "ADMIN")
+    void adminPuedeActualizarProducto() throws Exception {
+        Producto existente = new Producto();
+        existente.setId(1L);
+        existente.setNombre("Arroz");
+        existente.setPrecio(1000.0);
+        existente.setStock(10);
+        existente.setCategoria(new Categoria());
+
+        Producto actualizado = new Producto();
+        actualizado.setId(1L);
+        actualizado.setNombre("Arroz Premium");
+        actualizado.setPrecio(1500.0);
+        actualizado.setStock(12);
+        actualizado.setCategoria(new Categoria());
+
+        when(productoService.findById(1L)).thenReturn(existente);
+        when(productoService.save(any(Producto.class))).thenReturn(actualizado);
+
+        mockMvc.perform(put("/api/productos/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"nombre":"Arroz Premium","precio":1500,"stock":12,"categoria":{"id":1}}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nombre").value("Arroz Premium"));
+
+        verify(productoService).save(any(Producto.class));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void adminRecibeNotFoundSiProductoNoExiste() throws Exception {
+        when(productoService.findById(99L)).thenReturn(null);
+
+        mockMvc.perform(put("/api/productos/99")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"nombre":"Arroz Premium","precio":1500,"stock":12,"categoria":{"id":1}}
+                                """))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void adminPuedeEliminarProducto() throws Exception {
+        Producto producto = new Producto();
+        producto.setId(1L);
+        when(productoService.findById(1L)).thenReturn(producto);
+
+        mockMvc.perform(delete("/api/productos/1"))
+                .andExpect(status().isNoContent());
+
+        verify(productoService).deleteById(1L);
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
     void adminPuedeRegistrarInventario() throws Exception {
         when(inventarioService.save(any())).thenReturn(null);
 
@@ -83,6 +146,42 @@ class SecurityAccessTest {
                                 {"cantidad":5,"tipoMovimiento":"Entrada"}
                                 """))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    void clienteNoPuedeRegistrarInventario() throws Exception {
+        mockMvc.perform(post("/api/inventario")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"cantidad":5,"tipoMovimiento":"Entrada"}
+                                """))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void adminPuedeActualizarInventario() throws Exception {
+        when(inventarioService.findById(1L)).thenReturn(new com.minimarket.entity.Inventario());
+        when(inventarioService.save(any())).thenReturn(new com.minimarket.entity.Inventario());
+
+        mockMvc.perform(put("/api/inventario/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"cantidad":8,"tipoMovimiento":"Salida"}
+                                """))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void adminPuedeEliminarInventario() throws Exception {
+        when(inventarioService.findById(1L)).thenReturn(new com.minimarket.entity.Inventario());
+
+        mockMvc.perform(delete("/api/inventario/1"))
+                .andExpect(status().isNoContent());
+
+        verify(inventarioService).deleteById(1L);
     }
 
     @Test
@@ -108,5 +207,14 @@ class SecurityAccessTest {
                                 {"usuario":{"id":1},"fecha":"2026-06-24T00:00:00.000+0000"}
                                 """))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "CAJERO")
+    void cajeroPuedeVerListadoDeVentas() throws Exception {
+        when(ventaService.findAll()).thenReturn(java.util.List.of());
+
+        mockMvc.perform(get("/api/ventas"))
+                .andExpect(status().isOk());
     }
 }

@@ -16,8 +16,11 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import java.util.Optional;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class CustomUserDetailsServiceTest {
@@ -41,6 +44,8 @@ class CustomUserDetailsServiceTest {
         assertInstanceOf(CustomUserDetails.class, result);
         assertEquals("cajero1", result.getUsername());
         assertEquals(1, result.getAuthorities().size());
+        assertTrue(result.getAuthorities().stream()
+                .anyMatch(authority -> authority.getAuthority().equals("CAJERO")));
     }
 
     @Test

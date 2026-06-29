@@ -12,8 +12,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class VentaServiceImplTest {
@@ -27,7 +31,7 @@ class VentaServiceImplTest {
     @Test
     void saveGuardaVenta() {
         Venta venta = new Venta();
-        when(ventaRepository.save(venta)).thenReturn(venta);
+        when(ventaRepository.save(any(Venta.class))).thenReturn(venta);
 
         Venta result = ventaService.save(venta);
 
@@ -55,5 +59,14 @@ class VentaServiceImplTest {
 
         assertNotNull(result);
         assertEquals(99L, result.getId());
+    }
+
+    @Test
+    void findByIdRetornaNullCuandoNoExiste() {
+        when(ventaRepository.findById(11L)).thenReturn(Optional.empty());
+
+        Venta result = ventaService.findById(11L);
+
+        assertNull(result);
     }
 }

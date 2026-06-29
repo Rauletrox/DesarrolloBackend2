@@ -1,6 +1,7 @@
 package com.minimarket.service;
 
 import com.minimarket.entity.Inventario;
+import com.minimarket.entity.Producto;
 import com.minimarket.repository.InventarioRepository;
 import com.minimarket.service.impl.InventarioServiceImpl;
 import org.junit.jupiter.api.Test;
@@ -13,8 +14,12 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class InventarioServiceImplTest {
@@ -27,12 +32,8 @@ class InventarioServiceImplTest {
 
     @Test
     void saveRegistraMovimiento() {
-        Inventario inventario = new Inventario();
-        inventario.setCantidad(5);
-        inventario.setTipoMovimiento("Entrada");
-        inventario.setFechaMovimiento(new Date());
-
-        when(inventarioRepository.save(inventario)).thenReturn(inventario);
+        Inventario inventario = inventario("Entrada", 5);
+        when(inventarioRepository.save(any(Inventario.class))).thenReturn(inventario);
 
         Inventario result = inventarioService.save(inventario);
 
@@ -43,7 +44,7 @@ class InventarioServiceImplTest {
 
     @Test
     void findByIdRetornaMovimiento() {
-        Inventario inventario = new Inventario();
+        Inventario inventario = inventario("Entrada", 5);
         inventario.setId(7L);
         when(inventarioRepository.findById(7L)).thenReturn(Optional.of(inventario));
 
@@ -54,6 +55,15 @@ class InventarioServiceImplTest {
     }
 
     @Test
+    void findByIdRetornaNullCuandoNoExiste() {
+        when(inventarioRepository.findById(99L)).thenReturn(Optional.empty());
+
+        Inventario result = inventarioService.findById(99L);
+
+        assertNull(result);
+    }
+
+    @Test
     void findByProductoIdUsaRepositorio() {
         when(inventarioRepository.findByProductoId(12L)).thenReturn(List.of());
 
@@ -61,5 +71,14 @@ class InventarioServiceImplTest {
 
         assertNotNull(result);
         verify(inventarioRepository).findByProductoId(12L);
+    }
+
+    private Inventario inventario(String tipoMovimiento, Integer cantidad) {
+        Inventario inventario = new Inventario();
+        inventario.setTipoMovimiento(tipoMovimiento);
+        inventario.setCantidad(cantidad);
+        inventario.setFechaMovimiento(new Date());
+        inventario.setProducto(new Producto());
+        return inventario;
     }
 }

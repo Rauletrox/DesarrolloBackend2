@@ -13,8 +13,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class ProductoServiceImplTest {
@@ -27,13 +31,8 @@ class ProductoServiceImplTest {
 
     @Test
     void savePersisteProducto() {
-        Producto producto = new Producto();
-        producto.setNombre("Leche");
-        producto.setPrecio(1500.0);
-        producto.setStock(20);
-        producto.setCategoria(new Categoria());
-
-        when(productoRepository.save(producto)).thenReturn(producto);
+        Producto producto = producto("Leche", 1500.0, 20);
+        when(productoRepository.save(any(Producto.class))).thenReturn(producto);
 
         Producto result = productoService.save(producto);
 
@@ -44,7 +43,7 @@ class ProductoServiceImplTest {
 
     @Test
     void findByIdRetornaProductoCuandoExiste() {
-        Producto producto = new Producto();
+        Producto producto = producto("Leche", 1500.0, 20);
         producto.setId(1L);
         when(productoRepository.findById(1L)).thenReturn(Optional.of(producto));
 
@@ -55,6 +54,15 @@ class ProductoServiceImplTest {
     }
 
     @Test
+    void findByIdRetornaNullCuandoNoExiste() {
+        when(productoRepository.findById(9L)).thenReturn(Optional.empty());
+
+        Producto result = productoService.findById(9L);
+
+        assertNull(result);
+    }
+
+    @Test
     void findByCategoriaIdDelegatesToRepository() {
         when(productoRepository.findByCategoriaId(10L)).thenReturn(List.of());
 
@@ -62,5 +70,14 @@ class ProductoServiceImplTest {
 
         assertNotNull(result);
         verify(productoRepository).findByCategoriaId(10L);
+    }
+
+    private Producto producto(String nombre, Double precio, Integer stock) {
+        Producto producto = new Producto();
+        producto.setNombre(nombre);
+        producto.setPrecio(precio);
+        producto.setStock(stock);
+        producto.setCategoria(new Categoria());
+        return producto;
     }
 }

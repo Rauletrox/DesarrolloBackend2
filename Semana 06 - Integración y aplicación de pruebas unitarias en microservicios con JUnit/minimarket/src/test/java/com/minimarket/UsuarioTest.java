@@ -21,7 +21,7 @@ public class UsuarioTest {
         usuario.setPassword("securePassword123");
         usuario.setRoles(roles);
 
-        // Verificar que el usuario se creó correctamente
+        // Verificar que el usuario se creÃƒÂ³ correctamente
         assertNotNull(usuario);
         assertEquals("adminUser", usuario.getUsername());
         assertEquals("securePassword123", usuario.getPassword());
